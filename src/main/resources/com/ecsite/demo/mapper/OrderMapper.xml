@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ecsite.demo.mapper.OrderMapper">
+
+    <select id="insertOrder" resultType="Integer">
+        insert into orders(id, user_id, status)
+        values (default, #{userId}, #{status})
+        RETURNING id
+    </select>
+
+    <select id="insertOrderItem" resultType="Integer">
+        insert into order_items(id, item_id, order_id, quantity, size)
+        VALUES (default, #{itemId}, #{orderId}, #{quantity}, #{size})
+        RETURNING id
+    </select>
+
+    <insert id="insertOrderTopping">
+        INSERT INTO order_toppings (id, topping_id, order_item_id)
+        VALUES (default, #{toppingId}, #{orderItemId})
+    </insert>
+
+    <update id="updateOrderTotalPrice">
+        UPDATE orders
+        SET total_price = #{totalPrice}
+        WHERE id = #{id}
+    </update>
+
+    <!--  backUp  -->
+    <resultMap type="com.ecsite.demo.domain.Order" id="OrderMap">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="status" property="status"/>
+        <result column="total_price" property="totalPrice"/>
+        <result column="order_date" property="orderDate"/>
+        <result column="destination_name" property="destinationName"/>
+        <result column="destination_email" property="destinationEmail"/>
+        <result column="destination_zipcode" property="destinationZipcode"/>
+        <result column="destination_address" property="destinationAddress"/>
+        <result column="destination_tel" property="destinationTel"/>
+        <result column="delivery_time" property="deliveryTime"/>
+        <result column="payment_method" property="paymentMethod"/>
+
+        <collection property="orderItemList" ofType="com.ecsite.demo.domain.OrderItem">
+            <id column="orderItemId" property="id"/>
+            <result column="item_id" property="itemId"/>
+            <result column="order_id" property="orderId"/>
+            <result column="quantity" property="quantity"/>
+            <result column="size" property="size"/>
+            <result column="stem_id" property="itemId"/>
+
+            <association property="item" javaType="com.ecsite.demo.domain.Item">
+                <id column="itemId" property="id"/>
+                <result column="itemName" property="name"/>
+                <result column="itemDescription" property="description"/>
+                <result column="itemPriceM" property="priceM"/>
+                <result column="itemPriceL" property="priceL"/>
+                <result column="itemImagePath" property="imagePath"/>
+            </association>
+
+            <collection property="orderToppingList" ofType="com.ecsite.demo.domain.OrderTopping">
+                <id column="orderToppingId" property="id"/>
+                <result column="orderToppingToppingId" property="toppingId"/>
+                <result column="orderItemId" property="orderItemId"/>
+
+                <association property="topping" javaType="com.ecsite.demo.domain.Topping">
+                    <id column="toppingId" property="id"/>
+                    <result column="toppingName" property="name"/>
+                    <result column="toppingPriceM" property="priceM"/>
+                    <result column="toppingPriceL" property="priceL"/>
+                </association>
+            </collection>
+        </collection>
+    </resultMap>
+
+    <select id="findByStatusAndUserId" resultMap="OrderMap">
+        SELECT o.id                  as id
+             , o.user_id             as user_id
+             , o.status              as status
+             , o.total_price         as total_price
+             , o.order_date          as order_date
+             , o.destination_name    as destination_name
+             , o.destination_email   as destination_email
+             , o.destination_zipcode as destination_zipcode
+             , o.destination_address as destination_address
+             , o.destination_tel     as destination_tel
+             , o.delivery_time       as delivery_time
+             , o.payment_method      as payment_method
+
+             , oi.id                 as orderItemId
+             , oi.order_id           as order_id
+             , oi.item_id            as item_id
+             , oi.quantity           as quantity
+             , oi.size               as size
+
+             , items.id              as itemId
+             , items.name            as itemName
+             , items.description     as itemDescription
+             , items.price_m         as itemPriceM
+             , items.price_l         as itemPriceL
+             , items.image_path      as itemImagePath
+             , items.deleted         as itemDeleted
+
+             , ot.id                 as orderToppingId
+             , ot.topping_id         as orderToppingToppingId
+             , ot.order_item_id      as orderItemId
+
+             , toppings.id           as toppingId
+             , toppings.name         as toppingName
+             , toppings.price_m      as toppingPriceM
+             , toppings.price_l      as toppingPriceL
+
+        FROM orders AS o
+                 LEFT OUTER JOIN order_items AS oi
+                                 ON o.id = oi.order_id
+                 LEFT OUTER JOIN items
+                                 ON oi.item_id = items.id
+                 LEFT OUTER JOIN order_toppings as ot
+                                 ON ot.order_item_id = oi.id
+                 LEFT OUTER JOIN toppings
+                                 ON toppings.id = ot.topping_id
+
+        WHERE o.user_id = #{userId}
+
+          AND o.status = #{status}
+
+        ORDER BY o.id;
+
+    </select>
+
+    <select id="findOrderHistory" resultMap="OrderMap">
+        SELECT o.id                  as id
+             , o.user_id             as user_id
+             , o.status              as status
+             , o.total_price         as total_price
+             , o.order_date          as order_date
+             , o.destination_name    as destination_name
+             , o.destination_email   as destination_email
+             , o.destination_zipcode as destination_zipcode
+             , o.destination_address as destination_address
+             , o.destination_tel     as destination_tel
+             , o.delivery_time       as delivery_time
+             , o.payment_method      as payment_method
+
+             , oi.id                 as orderItemId
+             , oi.order_id           as order_id
+             , oi.item_id            as item_id
+             , oi.quantity           as quantity
+             , oi.size               as size
+
+             , items.id              as itemId
+             , items.name            as itemName
+             , items.description     as itemDescription
+             , items.price_m         as itemPriceM
+             , items.price_l         as itemPriceL
+             , items.image_path      as itemImagePath
+             , items.deleted         as itemDeleted
+
+             , ot.id                 as orderToppingId
+             , ot.topping_id         as orderToppingToppingId
+             , ot.order_item_id      as orderItemId
+
+             , toppings.id           as toppingId
+             , toppings.name         as toppingName
+             , toppings.price_m      as toppingPriceM
+             , toppings.price_l      as toppingPriceL
+
+        FROM orders AS o
+                 LEFT OUTER JOIN order_items AS oi
+                                 ON o.id = oi.order_id
+                 LEFT OUTER JOIN items
+                                 ON oi.item_id = items.id
+                 LEFT OUTER JOIN order_toppings as ot
+                                 ON ot.order_item_id = oi.id
+                 LEFT OUTER JOIN toppings
+                                 ON toppings.id = ot.topping_id
+
+        WHERE o.user_id = #{userId}
+
+          AND o.status != 0
+
+        ORDER BY o.id;
+
+    </select>
+
+
+    <delete id="deleteItemFromCart">
+        BEGIN;
+        DELETE
+        FROM order_items
+        WHERE id = #{orderItemId};
+        DELETE
+        FROM order_toppings
+        WHERE order_item_id = #{orderItemId};
+        COMMIT;
+    </delete>
+
+    <update id="updateForOrderConfirm">
+        UPDATE orders
+        set status              = #{status},
+            order_date          = #{orderDate},
+            destination_name    = #{name},
+            destination_email   = #{email},
+            destination_zipcode = #{zipcode},
+            destination_tel     = #{telephone},
+            delivery_time       = #{deliveryTime},
+            payment_method      = #{paymentMethod}
+        WHERE user_id = #{userId}
+          AND status = 0
+          AND id = #{id}
+    </update>
+
+    <update id="updateOrderId">
+        UPDATE orders o
+        set user_id = #{userId}
+        WHERE user_id = #{temporaryId}
+    </update>
+
+
+</mapper>
